@@ -1,0 +1,72 @@
+# compiled output
+/dist
+/dist-server
+/build
+/tmp
+/out-tsc
+/out
+/.next
+/.svelte-kit
+/.vercel
+/.netlify
+*.tsbuildinfo
+
+# dependencies
+node_modules/
+.pnpm-store/
+.npm/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Caches
+.cache/
+.vite/
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# Project Specific
+v0-landingpage-code/
+attached_assets/
+.agents/
+.replit
+.replitignore
+replit.md
+.local_secrets
+.local/
