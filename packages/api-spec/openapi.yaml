@@ -1,0 +1,1049 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: BillMind API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: clients
+    description: Client management
+  - name: invoices
+    description: Invoice management
+  - name: projects
+    description: Project management
+  - name: analytics
+    description: Analytics and reporting
+  - name: user
+    description: User profile management
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ─── CLIENTS ─────────────────────────────────────────────────────────────────
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List all clients
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Clients list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clients:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Client"
+                  total:
+                    type: integer
+                  pages:
+                    type: integer
+                required: [clients, total, pages]
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientBody"
+      responses:
+        "201":
+          description: Client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a single client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Client detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientDetail"
+        "404":
+          description: Not found
+    put:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientBody"
+      responses:
+        "200":
+          description: Updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
+  # ─── PROJECTS ────────────────────────────────────────────────────────────────
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      parameters:
+        - name: clientId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed, paused]
+      responses:
+        "200":
+          description: Projects list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                  total:
+                    type: integer
+                required: [projects, total]
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    put:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
+  # ─── INVOICES ─────────────────────────────────────────────────────────────────
+  /invoices:
+    get:
+      operationId: listInvoices
+      tags: [invoices]
+      summary: List invoices with filters
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, SENT, VIEWED, PAID, OVERDUE, CANCELLED]
+        - name: clientId
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Invoices list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Invoice"
+                  total:
+                    type: integer
+                  pages:
+                    type: integer
+                  statusCounts:
+                    $ref: "#/components/schemas/StatusCounts"
+                required: [invoices, total, pages, statusCounts]
+    post:
+      operationId: createInvoice
+      tags: [invoices]
+      summary: Create a new invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceBody"
+      responses:
+        "201":
+          description: Invoice created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+
+  /invoices/{id}:
+    get:
+      operationId: getInvoice
+      tags: [invoices]
+      summary: Get a single invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invoice detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+        "404":
+          description: Not found
+    put:
+      operationId: updateInvoice
+      tags: [invoices]
+      summary: Update an invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInvoiceBody"
+      responses:
+        "200":
+          description: Updated invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+    delete:
+      operationId: deleteInvoice
+      tags: [invoices]
+      summary: Delete an invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
+  /invoices/{id}/send:
+    post:
+      operationId: sendInvoice
+      tags: [invoices]
+      summary: Send invoice via email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+      responses:
+        "200":
+          description: Invoice sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  sentAt:
+                    type: string
+                    format: date-time
+                required: [success, sentAt]
+
+  /invoices/{id}/mark-paid:
+    post:
+      operationId: markInvoicePaid
+      tags: [invoices]
+      summary: Mark invoice as paid
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paidDate:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Invoice marked as paid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+
+  /invoices/public/{token}:
+    get:
+      operationId: getPublicInvoice
+      tags: [invoices]
+      summary: Get public invoice view by token (no auth needed)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetail"
+
+  # ─── ANALYTICS ────────────────────────────────────────────────────────────────
+  /analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      tags: [analytics]
+      summary: Get dashboard analytics summary
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [30d, 90d, 180d, 365d]
+            default: 30d
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsSummary"
+
+  /analytics/revenue-chart:
+    get:
+      operationId: getRevenueChart
+      tags: [analytics]
+      summary: Get revenue chart data by month
+      parameters:
+        - name: months
+          in: query
+          schema:
+            type: integer
+            default: 12
+      responses:
+        "200":
+          description: Revenue chart data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RevenueDataPoint"
+                required: [data]
+
+  /analytics/top-clients:
+    get:
+      operationId: getTopClients
+      tags: [analytics]
+      summary: Get top clients by revenue
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        "200":
+          description: Top clients
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clients:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TopClient"
+                required: [clients]
+
+  # ─── USER ─────────────────────────────────────────────────────────────────────
+  /user/profile:
+    get:
+      operationId: getUserProfile
+      tags: [user]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    put:
+      operationId: updateUserProfile
+      tags: [user]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserProfileBody"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    # ─── USER ───────────────────────────────────────────────────────────────────
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        businessName:
+          type: string
+          nullable: true
+        businessLogo:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        taxNumber:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, email, currency, createdAt]
+
+    UpdateUserProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+        businessName:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        taxNumber:
+          type: string
+        currency:
+          type: string
+
+    # ─── CLIENTS ────────────────────────────────────────────────────────────────
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        company:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        totalInvoiced:
+          type: number
+        totalPaid:
+          type: number
+        pendingAmount:
+          type: number
+        invoiceCount:
+          type: integer
+        lastInvoiceDate:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, email, totalInvoiced, totalPaid, pendingAmount, invoiceCount, createdAt]
+
+    ClientDetail:
+      allOf:
+        - $ref: "#/components/schemas/Client"
+        - type: object
+          properties:
+            invoices:
+              type: array
+              items:
+                $ref: "#/components/schemas/Invoice"
+            projects:
+              type: array
+              items:
+                $ref: "#/components/schemas/Project"
+            avgPaymentDays:
+              type: number
+              nullable: true
+          required: [invoices, projects]
+
+    CreateClientBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        company:
+          type: string
+        address:
+          type: string
+        country:
+          type: string
+        notes:
+          type: string
+      required: [name, email]
+
+    # ─── PROJECTS ───────────────────────────────────────────────────────────────
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        rate:
+          type: number
+          nullable: true
+        rateType:
+          type: string
+          enum: [hourly, fixed]
+        status:
+          type: string
+          enum: [active, completed, paused]
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+        clientId:
+          type: string
+        clientName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, rateType, status, clientId, clientName, createdAt]
+
+    CreateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        rate:
+          type: number
+        rateType:
+          type: string
+          enum: [hourly, fixed]
+        status:
+          type: string
+          enum: [active, completed, paused]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        clientId:
+          type: string
+      required: [name, clientId]
+
+    # ─── INVOICES ───────────────────────────────────────────────────────────────
+    LineItem:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: number
+        rate:
+          type: number
+        amount:
+          type: number
+      required: [id, description, quantity, rate, amount]
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        invoiceNumber:
+          type: string
+        title:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [DRAFT, SENT, VIEWED, PAID, OVERDUE, CANCELLED]
+        issueDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        paidDate:
+          type: string
+          format: date-time
+          nullable: true
+        currency:
+          type: string
+        subtotal:
+          type: number
+        taxRate:
+          type: number
+        taxAmount:
+          type: number
+        discountRate:
+          type: number
+        discountAmount:
+          type: number
+        total:
+          type: number
+        notes:
+          type: string
+          nullable: true
+        terms:
+          type: string
+          nullable: true
+        publicToken:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        clientId:
+          type: string
+        clientName:
+          type: string
+        clientEmail:
+          type: string
+        projectId:
+          type: string
+          nullable: true
+        projectName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, invoiceNumber, status, issueDate, dueDate, currency, subtotal, taxRate, taxAmount, discountRate, discountAmount, total, publicToken, clientId, clientName, clientEmail, createdAt]
+
+    InvoiceDetail:
+      allOf:
+        - $ref: "#/components/schemas/Invoice"
+        - type: object
+          properties:
+            lineItems:
+              type: array
+              items:
+                $ref: "#/components/schemas/LineItem"
+            client:
+              $ref: "#/components/schemas/Client"
+            user:
+              $ref: "#/components/schemas/UserProfile"
+          required: [lineItems, client, user]
+
+    CreateInvoiceBody:
+      type: object
+      properties:
+        clientId:
+          type: string
+        projectId:
+          type: string
+        title:
+          type: string
+        invoiceNumber:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+        issueDate:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        taxRate:
+          type: number
+        discountRate:
+          type: number
+        notes:
+          type: string
+        terms:
+          type: string
+        lineItems:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              quantity:
+                type: number
+              rate:
+                type: number
+            required: [description, quantity, rate]
+      required: [clientId, dueDate, lineItems]
+
+    UpdateInvoiceBody:
+      type: object
+      properties:
+        clientId:
+          type: string
+        projectId:
+          type: string
+        title:
+          type: string
+        invoiceNumber:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, SENT, VIEWED, PAID, OVERDUE, CANCELLED]
+        dueDate:
+          type: string
+          format: date-time
+        issueDate:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        taxRate:
+          type: number
+        discountRate:
+          type: number
+        notes:
+          type: string
+        terms:
+          type: string
+        lineItems:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              quantity:
+                type: number
+              rate:
+                type: number
+            required: [description, quantity, rate]
+
+    StatusCounts:
+      type: object
+      properties:
+        DRAFT:
+          type: integer
+        SENT:
+          type: integer
+        VIEWED:
+          type: integer
+        PAID:
+          type: integer
+        OVERDUE:
+          type: integer
+        CANCELLED:
+          type: integer
+      required: [DRAFT, SENT, VIEWED, PAID, OVERDUE, CANCELLED]
+
+    # ─── ANALYTICS ──────────────────────────────────────────────────────────────
+    AnalyticsSummary:
+      type: object
+      properties:
+        totalRevenue:
+          type: number
+        pendingRevenue:
+          type: number
+        overdueRevenue:
+          type: number
+        invoiceCount:
+          type: integer
+        paidCount:
+          type: integer
+        overdueCount:
+          type: integer
+        draftCount:
+          type: integer
+        avgPaymentDays:
+          type: number
+          nullable: true
+        revenueGrowth:
+          type: number
+          description: "Percentage growth vs previous period"
+        paymentRate:
+          type: number
+          description: "Percentage of invoices paid"
+      required: [totalRevenue, pendingRevenue, overdueRevenue, invoiceCount, paidCount, overdueCount, draftCount, paymentRate]
+
+    RevenueDataPoint:
+      type: object
+      properties:
+        month:
+          type: string
+        revenue:
+          type: number
+        invoiceCount:
+          type: integer
+      required: [month, revenue, invoiceCount]
+
+    TopClient:
+      type: object
+      properties:
+        clientId:
+          type: string
+        clientName:
+          type: string
+        company:
+          type: string
+          nullable: true
+        revenue:
+          type: number
+        invoiceCount:
+          type: integer
+        pendingAmount:
+          type: number
+      required: [clientId, clientName, revenue, invoiceCount, pendingAmount]
